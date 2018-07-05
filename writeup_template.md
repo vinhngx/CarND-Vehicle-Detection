@@ -20,9 +20,6 @@ The goals / steps of this project are the following:
 
 [heatmap]: ./examples/heatmap.png
 
-
-[image6]: ./examples/labels_map.png
-[image7]: ./examples/output_bboxes.png
 [video1]: ./project_video.mp4
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
@@ -122,11 +119,11 @@ I then proceed to training a larger ensemble, by lowering the learning and subms
 
 ### Sliding Window Search
 
-This step is carried out in the IPython notebook [Sliding Window Search-all-features-withHistory](./Sliding Window Search-all-features-withHistory.ipynb). We first reimplement the same feature extraction pipeline as described in the above section.
+This step is carried out in the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb). We first reimplement the same feature extraction pipeline as described in the above section.
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-The sliding window search is detailed in the "sliding window search" section of the IPython notebook [Sliding Window Search-all-features-withHistory](./Sliding Window Search-all-features-withHistory.ipynb).
+The sliding window search is detailed in the "sliding window search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
 
 For each image at a specific scale, we first compute the HOG features for the whole image. A window of size 64 is then slided throughout the Region of Interest in the image ```img[ystart:ystop,:,:]```  at 75% percent overlap (```cells_per_step=2``` given each windows consists of 8 cells).
 
@@ -139,7 +136,7 @@ Then, the features for the window is extracted as follows:
 We then employ a heat map to accumulate detection results at different scale. Finally, a threshold is applied on the heat map and connected component of this thresholded heat map is identified using `scipy.ndimage.measurements.label()`. Each separate connected component corresponds to a detected car. We empirically found 3 to be a good threshold for eliminating false positives.
 
 
-Example detection images are provided in the "sliding window search" section of the IPython notebook [Sliding Window Search-all-features-withHistory](./Sliding Window Search-all-features-withHistory.ipynb).
+Example detection images are provided in the "sliding window search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
 
 ![sliding_window_1][sliding_window_1]
 ![sliding_window_2][sliding_window_2]
@@ -148,7 +145,7 @@ Example detection images are provided in the "sliding window search" section of 
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-A full car detection pipeline is implemented in the "Full car-detection pipeline" section in the "sliding window search" section of the IPython notebook [Sliding Window Search-all-features-withHistory](./Sliding Window Search-all-features-withHistory.ipynb).
+A full car detection pipeline is implemented in the "Full car-detection pipeline" section in the "sliding window search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
 
 
 ---
