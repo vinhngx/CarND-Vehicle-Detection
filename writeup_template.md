@@ -40,15 +40,16 @@ The code for this step is contained in the IPython notebook  [extract-combined-f
 
 *Exploring data sets*: I first read and explore the training data sets. Combining all the car and non-car examples from the suggested training data sets [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip), we've got 8792 car and 8968 non-car examples. A random selection of samples is presented below:
 
-
 ![cars][cars]
 ![noncars][noncars]
 
+Next we extract HOG, spatial color features and color histogram.
+
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-I extracted 3 types of features:
+The parameters for the 3 types of features are as follows:
 
-- HOG with the following parameters:
+- HOG:
 
 ```python
 colorspace = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
@@ -64,21 +65,21 @@ Example visualization of of HOG features are presented in the IPython notebook  
 
 - Color histogram features  with nbins=32, bins_range=(0, 256)
 
-These are rather standard parameter settings suggested in the lectures. Since the classifiers trained on top of these features exhibit good accuracy (>99%), I have not explored other parameter settings (such as other bin sizes and color spaces). 
+Justification for HOG parameter selection: these are rather standard parameter settings suggested in the lectures, as well as popularly seen in the HOG literature (e.g. open source codes and code examples on the Internet). Since the classifiers trained on top of these features exhibit good accuracy (>99%), I have not explored other parameter settings (such as other bin sizes and color spaces).
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
 I trained several classifiers on top of the extracted features, as detailed in the "Training classifiers" section of the IPython notebook  [extract-combined-features-and-train-classifiers.ipynb](./extract-combined-features-and-train-classifiers.ipynb).
 
-- The data (extracted features) is first splitted into train-test sets at 80%-20% ratio.
+- The data (in extracted features form) is first splitted into train-test sets at 80%-20% ratio. A scikit-learn feature scaler is employed to scale the train data to zero mean and unit variance.
 
 - A simple linear SVM with default parameters reached a test accuracy of 96.26%, which is promising. Training is also rather speedy, requiring only ~37 secs. 
 
-- I then attemped training a non-linear SVM with default parameters, however, it required too much time for training a single non-linear SVM (few hundreds of seconds on a 8-core machine). Since we would surely have to carry out a grid-search to find the optimal paramters setting, this would become too expensvie and also resource-inefficient, considering sklearn implementation of the SVM is single-threaded.
+- I then attemped training a non-linear SVM with default parameters. However, it took too much time for training a single non-linear SVM (few hundreds of seconds on a 8-core machine). Since we would surely have to carry out a grid-search to find the optimal parameter setting, this would become too expensvie and also resource-inefficient, considering scikit-learn implementation of the SVM is only single-threaded.
 
-- I then attemped an ensemble decision tree method, named Xgboost. Xgboost generally perform very well with minimal parameter tweaking. 
+- I then attemped a decision tree ensemble method, named Xgboost. Xgboost generally performs very well with minimal parameter tweaking. 
 
-I first tried training a small ensemble with the following paramters:
+I first tried training a small ensemble  of 150 trees with the following parameters:
 
 ```python
 model = xgb.XGBClassifier(
@@ -96,7 +97,7 @@ model = xgb.XGBClassifier(
  
 which reached a test accuracy of 98.99%, which is very promising. The training and validation log-loss and classification errors are plotted to inspect potential overfitting issues.
  
-I then proceed to training a larger ensemble, by lowering the learning and submsapling rates, in order to reduce overfitting.
+I then proceed to training a larger ensemble of 1000 trees, by lowering the learning and submsapling rates, in order to reduce overfitting.
  
  ```python
  model2 = xgb.XGBClassifier(
@@ -112,28 +113,30 @@ I then proceed to training a larger ensemble, by lowering the learning and subms
  scale_pos_weight=1)
  ```
  
- This classifier reached a test accuracy of 99.21% and is selected for the next step.
+ This classifier reached an improved test accuracy of 99.21% and is selected for the next step.
  
- Xgboost is fully parallel, making very efficient use of the 8-core machine (16 threads).
+ It is worth noting that Xgboost is fully parallel, making very efficient use of the 8-core machine (16 threads).
 
+At the end of this step, the Xgboost classifier and the feature scaler is saved in the [Pickle file](./xgboost_allfeatures_large.pkl).
 
 ### Sliding Window Search
 
-This step is carried out in the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb). We first reimplement the same feature extraction pipeline as described in the above section.
+This step is carried out in the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb). We first re-implement the same feature extraction pipeline as described in the above section. The Xgboost classifier and the feature scaler is loaded from the above-mentioned Pickle file.
+
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 
-The sliding window search is detailed in the "sliding window search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
+The sliding window search is detailed in the "Sliding Window Search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
 
-For each image at a specific scale, we first compute the HOG features for the whole image. A window of size 64 is then slided throughout the Region of Interest in the image ```img[ystart:ystop,:,:]```  at 75% percent overlap (```cells_per_step=2``` given each windows consists of 8 cells).
+For each image at a specific scale, we first compute the HOG features for the whole image. A window of size 64 is then slided throughout the Region of Interest (ROI) in the image ```img[ystart:ystop,:,:]```  at 75% percent overlap (```cells_per_step=2```, given each windows consists of 8 cells). The ROI was defined, considering where in the image cars can likely be found. This also significantly reduces the number of windows and false positives. We have found that the 75% percent overlap provides good fine-grained coverage of the whole ROI.
 
 Then, the features for the window is extracted as follows:
 
 - HOG features are extracted from the pre-computed whole-image HOG features.
 
-- Spatial color features and color histogram features are extracted for the window.
+- Spatial color features and color histogram features are extracted from the corresponding sub image.
 
-We then employ a heat map to accumulate detection results at different scale. Finally, a threshold is applied on the heat map and connected component of this thresholded heat map is identified using `scipy.ndimage.measurements.label()`. Each separate connected component corresponds to a detected car. We empirically found 3 to be a good threshold for eliminating false positives.
+We then employ a heat map to accumulate detection results at different scales. Finally, a threshold is applied to the heat map and connected component of this thresholded heat map is identified using `scipy.ndimage.measurements.label()`. Each separate connected component corresponds to a detected car. We empirically found 3 to be a good threshold for eliminating false positives.
 
 
 Example detection images are provided in the "sliding window search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
@@ -147,6 +150,15 @@ Example detection images are provided in the "sliding window search" section of 
 
 A full car detection pipeline is implemented in the "Full car-detection pipeline" section in the "sliding window search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
 
+In order to improve the accuracy of this pipeline, we have iterated over the following ideas:
+
+- Trying different classifiers (linear and non-linear SVM with different parameters, Xgboost with different learning rate, tree depth and number of trees). We have found that it is critical to reach a high accuracy of >99% in order to reduce the number of false positives.
+
+- Extracting more features: initially only HOG features were used. We the complement this with spatial color and color histogram features. 
+
+- Several thresholds for heatmap was trialed.
+
+
 
 ---
 
@@ -158,7 +170,7 @@ Here's a [link to my video result](./project_video_processed.mp4)
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-To smooth out detection results on video, we concatenate the detection results, i.e. detected boxes, of 6 consecutive frames, and apply a higher threshold to the heat map. Empirically, a threshold of 3x6, i.e. threshold for individual frame x #frames,  was found to work reasonably well to suppress false positives that were not consistently detected accross a few frames. 
+To smooth out detection on video, we concatenate the detected bounding boxes of 6 consecutive frames, and apply a higher threshold to the heat map. Empirically, a threshold of 3x6, i.e. threshold for individual frame x #frames,  was found to work reasonably well in suppressing false positives that were not consistently detected accross a few frames. 
 
 I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
 The video shows both the original frame as well as the heatmap. 
@@ -170,13 +182,13 @@ The video shows both the original frame as well as the heatmap.
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 Several difficulties were observed during this project:
-- If the classifier accuracy is not high enough, e.g. <99%, then the number of false positive will be quite high, given that there are many sliding windows. Here I have not taken measures to reduce the number of sliding windows needed to be processed.
+- If the classifier accuracy is not high enough, e.g. <99%, then the number of false positives will be quite high, given that there are many sliding windows. Here I have not taken measures to reduce the number of sliding windows needed to be processed, but instead focusing on improving the classifer accuracy.
 
-- The Xgboost classifier is quite speedy, but it becomes expensive when processing long videos. It is possible to use a smaller ensemble to speed up detection.
+- The Xgboost classifier is quite speedy, but it becomes expensive when processing long videos. It is possible to use a smaller ensemble to speed up the whole detection pipeline.
 
-- The feature detection step was done quite efficiently for HOG feature extraction, but spatial features and color histogram features were extracted frame-by-frame, potentially resulting in redudant computation. 
+- The feature detection step was done quite efficiently for HOG feature extraction, but spatial features and color histogram features were extracted for each individual frame, potentially resulting in redudant computation since the frames overlap. 
 
-- Using neural network architectures such as YOLO and SSD could improve this work by doing both detection and classification in a single feed-forward pass.
+- Using neural network architectures, such as YOLO and SSD, could improve this work by doing both detection and classification in a single feed-forward pass.
 
 
 
