@@ -126,7 +126,15 @@ This step is carried out in the IPython notebook [Sliding-Window-Search-all-feat
 
 The sliding window search is detailed in the "Sliding Window Search" section of the IPython notebook [Sliding-Window-Search-all-features-withHistory](./Sliding-Window-Search-all-features-withHistory.ipynb).
 
-For each image at a specific scale, we first compute the HOG features for the whole image. A window of size 64 is then slided throughout the Region of Interest (ROI) in the image ```img[ystart:ystop,:,:]```  at 75% percent overlap (```cells_per_step=2```, given each window consists of 8 cells). The ROI was defined, considering where in the image cars can likely be found. This also significantly reduces the number of windows and hence false positives. We have found that the 75% percent overlap provides good fine-grained coverage of the whole ROI.
+For each image at a specific scale, we first compute the HOG features for the whole image. A window of size 64 is then slided throughout the Region of Interest (ROI) in the image ```img[ystart:ystop,:,:]```. The overlap between consecutive windows is controlled by the parameter ```cells_per_step```. We tried two ```cells_per_step``` values:
+
+- ```cells_per_step = 2```: 75% percent overlap (given each window consists of 8 cells)
+
+- ```cells_per_step = 4```: 50% percent overlap
+
+We have found that a larger ```cells_per_step = 4``` value results in less windows to evaluate, thus helping to suppress the false positive. However, the detection result is not as fine-grained as smaller values.
+
+The ROI was defined, considering where in the image cars can likely be found. This also significantly reduces the number of windows and hence false positives. We have found that the 75% percent overlap provides good fine-grained coverage of the whole ROI.
 
 Then, the features for the window is extracted as follows:
 
@@ -164,7 +172,9 @@ In order to improve the accuracy of this pipeline, we have iterated over the fol
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video_processed.mp4)
+Here's a [link to my video result](./project_video_processed.mp4) at ```cells_per_step = 2```
+
+Here's a [link to my video result](./project_video_processed_2.mp4) at ```cells_per_step = 4```
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
@@ -188,6 +198,8 @@ Several difficulties were observed during this project:
 - The feature detection step was done quite efficiently for HOG feature extraction, but spatial features and color histogram features were extracted for each individual frame, potentially resulting in redudant computation since the frames overlap. 
 
 - Using neural network architectures, such as YOLO and SSD, could improve this work by doing both detection and classification in a single feed-forward pass.
+
+- There still exist some hard to suppress false positives.
 
 
 
