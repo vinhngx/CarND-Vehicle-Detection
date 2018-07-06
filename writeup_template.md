@@ -63,7 +63,7 @@ hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
 
 - Color histogram features  with nbins=32, bins_range=(0, 256)
 
-Justification for HOG parameter selection: these are rather standard parameter settings suggested in the lectures, as well as popularly seen in the HOG literature (e.g. open source codes and code examples on the Internet). Since the classifiers trained on top of these features exhibit good accuracy (>99%), I have not explored other parameter settings (such as other bin sizes and color spaces).
+Justification for HOG parameter selection: these are rather standard parameter settings suggested in the lectures, as well as popularly seen in the HOG literature (e.g. open source codes and code examples on the Internet). Since the classifiers trained on top of these features exhibit good accuracy (>99%), I have not explored other parameter settings, such as other bin sizes. The HSV color space was also trialed, yeilding slightly better classification accuracy. 
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
@@ -165,7 +165,7 @@ In order to improve the accuracy of this pipeline, we have iterated over the fol
 
 - Several thresholds for the heatmap was trialed.
 
-
+- The HSV color space was tried, as detailed in the Jupyter notebooks [extract-combined-features-and-train-classifiers-HSV](./extract-combined-features-and-train-classifiers-HSV.ipynb) and [Sliding-Window-Search-all-features-withHistory-HSV](./Sliding-Window-Search-all-features-withHistory-HSV.ipynb). This results in slightly better classification accuracies (98% for linear SVM, 99.44% and 99.55% for small and large Xgboost ensemble respectively. However the final results on video were comparable to the RGB color space.
 
 ---
 
